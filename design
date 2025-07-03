@@ -1,0 +1,118 @@
+
+What the language tries to achieve:
+* C++ without the excessive keywords
+    * constexpr by default
+    * const by default
+    * optionally mutable
+    * no exceptions (no exceptions)
+
+* C++ without the standard library
+    * the most fundamentally desired types builtin:
+        * array
+        * tuple
+        * span
+        * variant
+        * optional
+        * expected
+
+    * small standard containers
+        * box           // unique_ptr
+        * ref_box       // shared_ptr
+        * value_box     // non-null unique_ptr
+        * value_ref_box // non-null shared_ptr
+        * vector
+        * string
+
+* take the good parts from haskell without the heap
+
+* two distinct distribution methods: modules and libraries
+    * shared libraries are your standard c/c++ out of line, exported code. Provides a shared object that can be interfaces with the standard ABI, from C or C++, or any other langauge that can interface with such native objects. Only used for shared libraries.
+    * modules are embedded representations of the AST that allows for templates to be redistributed without header files. It also allows embedding of pre-compiled objects to aid in compilation and linking time. This essentially replaces the static library.
+
+* header files can optionally be exported but are not needed for the compilation process. They solely are there to expose the programmer to the API in a human-readable way without the need of a LSP.
+
+* no coroutine support, at least not yet. implicit heap is bad.
+
+* there is no memory safety guarantee, but well written code should avoid it well. There should be an optional "safe-mode" similar to the Fil-C implementation of C/C++.
+
+* memory dynamically allocated at compile time that is not destructed turns into static memory.
+
+* incremental builds should be supported by some AST caching mechanism. dependency graphs should avoid reevaluation of time-consuming compile-time evaluations.
+
+* explicit constructors and operator(type) by default.
+    * seriously considering not allowing implicit at all, or at least having a warning whenever an implicit conversion happens.
+
+* excellent metaprogramming through syntax instead of resorting to compiler instrinsics such as __builtin_derives_from etc.
+
+* pattern matching function signatures by utilising variant / optional as monads. 
+    (essentially implementing a std::visit visitor lambda in the global scope.)
+
+* pattern matching function arguments by value 
+
+* primaries: u8, u16, u32, u64, f32, f64, i8, i16, i32, i64, char (alias char8), char16, char32
+
+* templates do not require "template" and "typename" but requires type qualification (or auto) when value passed.
+
+* concept
+
+    concept Unsigned<T> requires (T == u32 | u16 | u8 )
+
+* function declaration
+
+    fn factorial :: (Unsigned) -> Unsigned;
+    fn add :: (Unsigned, Unsigned) -> Unsigned;
+
+* functional function definition
+
+    fn factorial 1 = 1
+    fn factorial a = a * factorial(a - 1);
+
+    fn factorial a = match a {
+        1 => 1;
+        _ => a * factorial(a - 1);
+    };
+
+    fn add a b = a + b;
+    fn add Unsigned a Unsigned b = a + b;
+
+* "normal" imperative function definition
+
+    fn add(Unsigned a, Unsigned b) -> int {
+        a + b // (optional return)
+    }
+
+* if / for / while without braces
+
+    if true { ... }
+
+* reference by default, move / copy with keyword. perfect forwarding with keyword. doesn't apply to primitives
+
+    auto vec = vector{ 1, 2, 3 };
+
+    some_other_system.set_cache(move vec);
+    some_other_system.set_cache(copy vec);
+
+    // in some other system
+
+    set_cache :: (forward vector<int> v) {
+        self.vector = v;
+    }
+
+* types can be annotated by prefer_copy to be passed by value automatically. useful for something like string_view or other small register-friendly types.
+
+struct string_view prefer_copy
+{
+    const char* ptr;
+    u32 size;
+}
+
+* constructors have names (unless invoked by intializer braces).
+
+struct test
+{
+    construct from_int(int num) { self.num = num; }
+
+    int num;
+};
+
+* no deducing this needed: code adapts to reference qualifiers.

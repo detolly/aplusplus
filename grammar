@@ -1,0 +1,16 @@
+
+<top> = <top_level_statement> { <top> }
+
+<top_level_statement> = (<struct_definition> | <function_declaration> | <imperative_function_definition> |  <functional_function_definition>) 
+
+<function_declaration> = 'fn' <character_literal> { <template> } '::' '(' { <type> { ',' <type> } } ')' '->' <type>
+
+<template> = '<' <character_literal> { ',' <character_literal> } '>'
+
+<functional_function_definition> = 'pure' 'fn' <character_literal> { <template> } { { <type> } <character_literal> { ',' <type> { <character_literal> } } } '=' { <statement>... }
+
+<imperative_function_definition> = 'fn' <character_literal> { <template> } '(' { <type> { <character_literal> } { ',' <type> { <character_literal> } } } ')' '{' { <statement>... } '}'
+
+<statement> = <return_statement>
+
+
