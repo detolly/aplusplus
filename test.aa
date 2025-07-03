@@ -6,4 +6,4 @@ fn add(i32 a, i32 b) -> i32 {
     return a + b;
 }
 
-pure fn add a b = a + b;
+fn add a b = a + b;

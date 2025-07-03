@@ -100,19 +100,75 @@ What the language tries to achieve:
 
 * types can be annotated by prefer_copy to be passed by value automatically. useful for something like string_view or other small register-friendly types.
 
-struct string_view prefer_copy
-{
-    const char* ptr;
-    u32 size;
-}
+    struct string_view prefer_copy
+    {
+        const char* ptr;
+        u32 size;
+    }
 
-* constructors have names (unless invoked by intializer braces).
+* constructors can have names.
 
-struct test
-{
-    construct from_int(int num) { self.num = num; }
+    struct test
+    {
+        construct from_int(int num) { self.num = num; }
+        construct from_int(int num) { self.num = num; }
 
-    int num;
-};
+        int num;
+    };
+
+    * lingering on constructors, c++ has a massive problem with wrapping structures and forwarding constructors to constructi in-place. std::optional and std::expected are full of footguns because of this. If you've used the features before, you've probably done at least an unintented move, and lots of memcpy, meaning the speedup RVO was supposed to give you was lost anyway.
+
+    Consider the following example:
+
+    struct thing
+    {
+        int a;
+        int b;
+        int c;
+    };
+
+    std::optional<thing> make_thing()
+    {
+        return thing{ 1, 2, 3 };
+    }
+
+    * here you are almost certainly invoking the move constructor (which is just a copy in this trivial case) to move the new temporary 'thing' the RVO optional. (assuming the compiler doesn't inline the function and optimize it away.)
+
+    * you can fix this by calling the in_place constructor (which is 99% of the time what you wanted to do), or the boilerplate std::make_optional function.
+
+    std::optional<thing> make_thing()
+    {
+        // 1:
+        return std::optional<thing>{ std::in_place_t{}, 1, 2, 3 };
+
+        // 2:
+        return std::make_optional<thing>(1, 2, 3);
+    }
+    
+    * this is obviously ridiculous, and gets even worse when you consider the std::expected case, because you have to forward differently for expected vs unexpected outcomes.
+
+    * Now, this is already fixed by 1. having them as langauge features, and 2. having explicit forwarding of references by the keywords move/copy, removing the footguns, and 3. not allowing implicit 
+    * but it's still lacking an intuitive way of understanding exactly what happens. std::constuct_at clearly needs to be an intuitive language feature too in order to make this clear.
+
+    * Let's try making our own version, utilizing the optional language-construct for simplicity.
+
+    struct optional<T>
+    {
+        implicit construct (construct T t)
+        {
+            impl = forward t;
+        }
+        
+        fn _has_value T a = true
+        fn _has_value None _ = false
+
+        fn has_value = _has_value(impl);
+
+        T? impl;
+    }
+
+    * we invented a new kind of reference that takes forwards the construct call inside the impl. 
+
+    * Also, since optional is implemented as a variant of T and the None-type, we're able to pattern match by the type of the implementation at run-time. 
 
 * no deducing this needed: code adapts to reference qualifiers.
