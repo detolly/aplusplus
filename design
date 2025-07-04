@@ -15,13 +15,18 @@ What the language tries to achieve:
         * optional
         * expected
 
+    * small standard utilities
+        * box          // unique_ptr
+        * rc_box       // shared_ptr
+        * arc_box      // atomic shared_ptr
+        * weak         // weak_ptr
+        * mutex
+        * semaphore
+
     * small standard containers
-        * box           // unique_ptr
-        * ref_box       // shared_ptr
-        * value_box     // non-null unique_ptr
-        * value_ref_box // non-null shared_ptr
         * vector
         * string
+        * map
 
 * take the good parts from haskell without the heap
 
@@ -125,6 +130,9 @@ What the language tries to achieve:
         int a;
         int b;
         int c;
+
+        thing(int a, int b, int c) : a(a), b(b), c(c) {};
+        thing(thing&& other);
     };
 
     std::optional<thing> make_thing()
@@ -132,9 +140,11 @@ What the language tries to achieve:
         return thing{ 1, 2, 3 };
     }
 
-    * here you are almost certainly invoking the move constructor (which is just a copy in this trivial case) to move the new temporary 'thing' the RVO optional. (assuming the compiler doesn't inline the function and optimize it away.)
+    * here you are almost certainly invoking the move constructor to move the new temporary 'thing' the RVO optional. (assuming the compiler doesn't inline the function and optimize it away.)
 
-    * you can fix this by calling the in_place constructor (which is 99% of the time what you wanted to do), or the boilerplate std::make_optional function.
+    * if your struct is trivial this might not be a problem (because the copy can be optimized away), but if you have any copy/move constructors defined (or implicitly declared by having non-trivial members), it will certainly become a problem.
+
+    * you can fix this by calling the in_place constructor (which is almost certainly what you wanted to do, and thought would happen), or the boilerplate std::make_optional function.
 
     std::optional<thing> make_thing()
     {
@@ -145,10 +155,20 @@ What the language tries to achieve:
         return std::make_optional<thing>(1, 2, 3);
     }
     
-    * this is obviously ridiculous, and gets even worse when you consider the std::expected case, because you have to forward differently for expected vs unexpected outcomes.
+    * this is obviously ridiculous, and gets even worse when you consider the std::expected case, because you have to forward differently for expected vs unexpected outcomes. Also, if you layer this on top of each other, for example by having an optional inside an expected case (yes i know very contrived), then you will get code like this:
 
-    * Now, this is already fixed by 1. having them as langauge features, and 2. having explicit forwarding of references by the keywords move/copy, removing the footguns, and 3. not allowing implicit 
-    * but it's still lacking an intuitive way of understanding exactly what happens. std::constuct_at clearly needs to be an intuitive language feature too in order to make this clear.
+    std::expected<std::optional<std::string>, int> make_thing(bool good)
+    {
+        if (good)
+            return std::expected{ std::in_place_t{}, std::in_place_t{}, "good" };
+
+        return std::expected{ std::unexpect_t{}, 2 };
+    }
+    
+
+    * Now, this is already fixed in my language by 1. having them as langauge features, and 2. having explicit forwarding of references by the keywords move/copy, removing the footguns, and 3. not allowing implicit by default
+
+    * but it's still lacking an intuitive way of understanding exactly what happens. There needs to be a better way of doing this for custom types.
 
     * Let's try making our own version, utilizing the optional language-construct for simplicity.
 
@@ -172,3 +192,13 @@ What the language tries to achieve:
     * Also, since optional is implemented as a variant of T and the None-type, we're able to pattern match by the type of the implementation at run-time. 
 
 * no deducing this needed: code adapts to reference qualifiers.
+
+* reference lifetimes like Rust
+
+* no borrow checking:
+    * if a thing is mutable, it's mutable forever.
+    * if a thing is immutable, it's immutable forever, like in c++. (without const_cast)
+
+* built-in type safe union: variant
+
+    variant SomeType = TypeA | TypeB | TypeC;

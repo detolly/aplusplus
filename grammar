@@ -1,16 +1,30 @@
 
-<top> = <top_level_statement> { <top> }
+builtin:
+    <identifier> = any alphanumeric token
+    <concept-identifier> = identifier that is a defined concept
+    <type-identifier> = identifier that is a defined type
 
-<top_level_statement> = (<struct_definition> | <function_declaration> | <imperative_function_definition> |  <functional_function_definition>) 
+// functions
 
-<function_declaration> = 'fn' <character_literal> { <template> } '::' '(' { <type> { ',' <type> } } ')' '->' <type>
+<function-arguments> = <function-argument> | <function-argument> ',' <function-arguments>
+<function-argument> = <type> { ',' <type> }
+<template> = '<' { <identifier> ',' } '>'
 
-<template> = '<' <character_literal> { ',' <character_literal> } '>'
+<type-identifier> = [ <identifier> ] <identifier>
 
-<functional_function_definition> = 'pure' 'fn' <character_literal> { <template> } { { <type> } <character_literal> { ',' <type> { <character_literal> } } } '=' { <statement>... }
+<function-declaration> = 'fn' <identifier> [ <template> ] '::' '(' [ <function-arguments> ] ')' [ '->' <identifier> ] ';'
 
-<imperative_function_definition> = 'fn' <character_literal> { <template> } '(' { <type> { <character_literal> } { ',' <type> { <character_literal> } } } ')' '{' { <statement>... } '}'
+<imperative-function-body> = 
 
-<statement> = <return_statement>
+<imperative-function-arguments> = <imperative-function-argument> | <imperative-function-argument> ',' <imperative-function-arguments>
+<imperative-function-argument> = <identifier> <identifier>
+<imperative-function-definition> = 'fn' <identifier> [ <template> ] '(' [ <function-arguments> ] ')' '{' { <imperative-function-body> '}'
 
+<functional-function-definition> = 'fn' <identifier> 
+
+// put it all together
+
+<a++> = { <top-level-statement> }
+
+<top-level-statement> = <struct-definition> | <function-declaration> | <imperative-function-definition> |  <functional-function-definition>
 
