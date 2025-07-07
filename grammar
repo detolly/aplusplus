@@ -20,11 +20,14 @@ builtin:
 <imperative-function-argument> = <identifier> <identifier>
 <imperative-function-definition> = 'fn' <identifier> [ <template> ] '(' [ <function-arguments> ] ')' '{' { <imperative-function-body> '}'
 
-<functional-function-definition> = 'fn' <identifier> 
+// <functional-function-definition> = 'fn' <identifier> 
 
 // put it all together
 
 <a++> = { <top-level-statement> }
 
-<top-level-statement> = <struct-definition> | <function-declaration> | <imperative-function-definition> |  <functional-function-definition>
+<top-level-statement> = <struct-definition> |
+                        <function-declaration> |
+                        <imperative-function-definition> |
+                        // <functional-function-definition>
 

@@ -174,7 +174,7 @@ What the language tries to achieve:
 
     struct optional<T>
     {
-        implicit construct (construct T t)
+        implicit construct (construct T t) // could also be "forward T t"
         {
             impl = forward t;
         }
@@ -195,9 +195,44 @@ What the language tries to achieve:
 
 * reference lifetimes like Rust
 
-* no borrow checking:
+* references can not be converted to move references. only owned values can be moved.
+    * can we optimize so that we only move once?
+        * yes, by introducing good apis 
+
+    struct database<T>
+    {
+        vector<T> objects;
+    }
+
+    struct thing
+    {
+        u32 a, b;
+    }
+ 
+    database<thing> database_1;
+    database<thing> database_2;
+ 
+    fn main()
+    {
+        for [i, obj] : database_1.objects.reverse_iter() {
+            if !is_object_we_are_looking_for
+                continue;
+
+            database_1.objects.move_and_swap(i, [database_2](forward element){
+                database_2.insert(forward element);
+            });
+        }
+    }
+
+* no borrow checking (kinda):
     * if a thing is mutable, it's mutable forever.
     * if a thing is immutable, it's immutable forever, like in c++. (without const_cast)
+
+    * in c++, if you know that an object is not const when it's defined, you're allowed to const_cast away a const. not in a++.
+
+    * you can still mess up your threading. You can use mutex types to be safe against this, with big overhead, of course.
+
+    * move references MUST take over the object that is being moved. Aka it must forward it to an assignment or some other call. It must happen in all branches. Alternatively it can be assigned to a stack variable, and then further moved or deleted at the end of the scope.
 
 * built-in type safe union: variant
 
